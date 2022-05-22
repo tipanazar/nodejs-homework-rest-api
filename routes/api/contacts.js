@@ -2,26 +2,13 @@ const express = require("express");
 
 const router = express.Router();
 
-const Joi = require("joi");
-const contacts = require("../../models/contacts");
-
-const firstSchema = Joi.object().keys({
-  name: Joi.string().required(),
-  email: Joi.string().email({ minDomainSegments: 2 }).required(),
-  phone: Joi.string().required(),
-});
-
-const secondSchema = Joi.object().keys({
-  name: Joi.string(),
-  email: Joi.string().email({ minDomainSegments: 2 }),
-  phone: Joi.string(),
-});
+const { Contact, schemas } = require("../../models/contact");
 
 const createError = require("../../helpers/createErr");
 
 router.get("/", async (req, res, next) => {
   try {
-    const result = await contacts.listContacts();
+    const result = await Contact.find({});
     res.json(result);
   } catch (err) {
     next(err);
@@ -31,7 +18,7 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   try {
     const contactId = req.params;
-    const result = await contacts.getContactById(contactId);
+    const result = await Contact.findById(contactId.id);
     if (!result) {
       throw createError(404);
     }
@@ -44,13 +31,16 @@ router.get("/:id", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const newContact = req.body;
-    const { error } = await firstSchema.validate(newContact);
+    const { error } = schemas.add.validate(newContact);
     if (error) {
       throw createError(400, "missing required name field");
     }
-    const result = await contacts.addContact(newContact);
+    const result = await Contact.create(newContact);
     res.json(result);
   } catch (err) {
+    if (err.message.includes("validaton failed")) {
+      err.status = 400;
+    }
     next(err);
   }
 });
@@ -59,11 +49,35 @@ router.patch("/:id", async (req, res, next) => {
   try {
     const contactData = req.body;
     const contactId = req.params;
-    const { error } = await secondSchema.validate(contactData);
+    const { error } = schemas.add.validate(contactData);
     if (error) {
       throw createError(400, "missing required name field");
     }
-    const result = await contacts.updateContact(contactId, contactData);
+    const result = await Contact.findByIdAndUpdate(contactId.id, contactData, {
+      new: true,
+    });
+    if (!result) {
+      throw createError(404);
+    }
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/:id/favorite", async (req, res, next) => {
+  try {
+    const contactId = req.params;
+    const bodyData = req.body;
+    const { error } = schemas.updFavorite.validate(bodyData);
+    if (error) {
+      throw createError(400, "missing field favorite");
+    }
+    const result = await Contact.findByIdAndUpdate(
+      contactId.id,
+      { favorite: bodyData.favorite },
+      { new: true }
+    );
     if (!result) {
       throw createError(404);
     }
@@ -76,7 +90,7 @@ router.patch("/:id", async (req, res, next) => {
 router.delete("/:id", async (req, res, next) => {
   try {
     const contactId = req.params;
-    const result = await contacts.removeContact(contactId);
+    const result = await Contact.findByIdAndDelete(contactId.id);
     if (!result) {
       throw createError(404);
     }

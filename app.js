@@ -1,17 +1,7 @@
 const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
-
-
-require('dotenv').config()
-
-const DB_HOST = process.env.DB_HOST
-
-const mongoose = require("mongoose");
-mongoose
-  .connect(DB_HOST)
-  .then(() => console.log("Database connection successful"))
-  .catch(() => process.exit(1));
+require("dotenv").config();
 
 const contactsRouter = require("./routes/api/contacts");
 
