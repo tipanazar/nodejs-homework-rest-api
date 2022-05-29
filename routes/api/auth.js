@@ -14,15 +14,15 @@ const { SECRET_KEY } = process.env;
 
 router.post("/signup", async (req, res, next) => {
   try {
-    const { error } = schemas.add.validate(req.body);
-    if (error) {
-      throw createError(400, error.message);
-    }
+    // const { error } = schemas.add.validate(req.body);
+    // if (error) {
+    //   throw createError(400, error.message);
+    // }
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (user) {
-      throw createError(409, "Email in use");
-    }
+    // const user = await User.findOne({ email });
+    // if (user) {
+    //   throw createError(409, "Email in use");
+    // }
     const hashPassword = await bcrypt.hash(password, 10);
     const result = await User.create({ email, password: hashPassword });
     res.status(201).json({
@@ -69,12 +69,12 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.get("/logout", auth, async (req, res, next) => {
-  try{
-    const {_id} = req.user
-    await User.findByIdAndUpdate(_id, {token: ''})
-    res.status(204).json()
-  } catch(err) {
-    next(err)
+  try {
+    const { _id } = req.user;
+    await User.findByIdAndUpdate(_id, { token: "" });
+    res.status(204).json();
+  } catch (err) {
+    next(err);
   }
 });
 
@@ -87,6 +87,33 @@ router.get("/current", auth, async (req, res, next) => {
   }
 });
 
-// добавить обновление подписки
+router.patch("/", auth, async (req, res, next) => {
+  try {
+    const { error } = schemas.subUpd.validate(req.body);
+    if (error) {
+      throw createError(400, error.message);
+    }
+    const { _id } = req.user;
+    const { subscription } = req.body;
+    const subMatch = await User.findOne({ _id, subscription });
+    if (subMatch) {
+      throw createError(
+        409,
+        `Your subscription is already: ${subMatch.subscription}`
+      );
+    }
+    console.log(subMatch);
+    const result = await User.findByIdAndUpdate(
+      _id,
+      { subscription },
+      {
+        new: true,
+      }
+    );
+    res.json({ email: result.email, subscription: result.subscription });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;
