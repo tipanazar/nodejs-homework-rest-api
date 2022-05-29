@@ -6,12 +6,17 @@ const { Contact, schemas } = require("../../models/Contact");
 
 const createError = require("../../helpers/createErr");
 
-const {auth} = require('../../middlewares')
+const { auth } = require("../../middlewares");
 
 router.get("/", auth, async (req, res, next) => {
   try {
-    const {_id} = req.user
-    const result = await Contact.find({owner: _id});
+    const { _id } = req.user;
+    const { page, limit, favorite } = req.query;
+    const favoriteVar = favorite ? { favorite: favorite } : null;
+    const result = await Contact.find({ owner: _id, ...favoriteVar }, "", {
+      skip: (page - 1) * limit,
+      limit: limit,
+    }).populate("owner", "email");
     res.json(result);
   } catch (err) {
     next(err);
@@ -31,14 +36,14 @@ router.get("/:id", auth, async (req, res, next) => {
   }
 });
 
-router.post("/",auth, async (req, res, next) => {
+router.post("/", auth, async (req, res, next) => {
   try {
     const newContact = req.body;
     const { error } = schemas.add.validate(newContact);
     if (error) {
       throw createError(400, "missing required name field");
     }
-    const result = await Contact.create({...newContact, owner: req.user._id});
+    const result = await Contact.create({ ...newContact, owner: req.user._id });
     res.json(result);
   } catch (err) {
     if (err.message.includes("validaton failed")) {
@@ -48,7 +53,7 @@ router.post("/",auth, async (req, res, next) => {
   }
 });
 
-router.patch("/:id", async (req, res, next) => {
+router.patch("/:id", auth, async (req, res, next) => {
   try {
     const contactData = req.body;
     const contactId = req.params;
@@ -68,7 +73,7 @@ router.patch("/:id", async (req, res, next) => {
   }
 });
 
-router.patch("/:id/favorite", async (req, res, next) => {
+router.patch("/:id/favorite", auth, async (req, res, next) => {
   try {
     const contactId = req.params;
     const bodyData = req.body;
@@ -90,7 +95,7 @@ router.patch("/:id/favorite", async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", auth, async (req, res, next) => {
   try {
     const contactId = req.params;
     const result = await Contact.findByIdAndDelete(contactId.id);

@@ -12,6 +12,8 @@ const contactSchema = Schema(
     },
     phone: {
       type: String,
+      required: [true, "Set phone for contact"],
+      unique: true,
     },
     favorite: {
       type: Boolean,
@@ -29,7 +31,7 @@ const contactSchema = Schema(
 const addSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email({ minDomainSegments: 2 }),
-  phone: Joi.string(),
+  phone: Joi.string().required(),
   favorite: Joi.boolean(),
 });
 

@@ -16,6 +16,7 @@ const userSchema = Schema(
       required: [true, "Email is required"],
       match: emailRegexp,
       unique: true,
+      dropDups: true
     },
     subscription: {
       type: String,
