@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const { Contact, schemas } = require("../../models/contact");
+const { Contact, schemas } = require("../../models/Contact");
 
 const createError = require("../../helpers/createErr");
 
