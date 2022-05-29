@@ -52,7 +52,7 @@ router.post("/login", async (req, res, next) => {
     const payload = {
       id: user._id,
     };
-    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "5min" });
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
     res.status(200).json({
       token,
       user: {
@@ -64,5 +64,7 @@ router.post("/login", async (req, res, next) => {
     next(err);
   }
 });
+
+// добавить обновление подписки
 
 module.exports = router;

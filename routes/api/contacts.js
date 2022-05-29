@@ -6,16 +6,19 @@ const { Contact, schemas } = require("../../models/Contact");
 
 const createError = require("../../helpers/createErr");
 
-router.get("/", async (req, res, next) => {
+const {auth} = require('../../middlewares')
+
+router.get("/", auth, async (req, res, next) => {
   try {
-    const result = await Contact.find({});
+    const {_id} = req.user
+    const result = await Contact.find({owner: _id});
     res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", auth, async (req, res, next) => {
   try {
     const contactId = req.params;
     const result = await Contact.findById(contactId.id);
@@ -28,14 +31,14 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/",auth, async (req, res, next) => {
   try {
     const newContact = req.body;
     const { error } = schemas.add.validate(newContact);
     if (error) {
       throw createError(400, "missing required name field");
     }
-    const result = await Contact.create(newContact);
+    const result = await Contact.create({...newContact, owner: req.user._id});
     res.json(result);
   } catch (err) {
     if (err.message.includes("validaton failed")) {
