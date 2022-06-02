@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
+const Jimp = require("jimp");
 
 const router = express.Router();
 
@@ -106,8 +107,9 @@ router.patch(
       const resultDir = path.join(avatarsDir, filename);
       await fs.rename(tempDir, resultDir);
       const avatarExtention = filename.split(".").reverse();
-      console.log(avatarExtention);
       const avatarName = `${_id}.${avatarExtention[0]}`;
+      const image = await Jimp.read(resultDir);
+      await image.resize(250, 250).write(resultDir);
       const avatarURL = path.join("avatars", avatarName);
       await User.findByIdAndUpdate(_id, { avatarURL });
       res.json({ avatarURL });
