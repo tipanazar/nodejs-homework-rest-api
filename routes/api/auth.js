@@ -5,7 +5,7 @@ const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
 const Jimp = require("jimp");
-const nanoid = require("nanoid");
+const { nanoid } = require("nanoid");
 
 const router = express.Router();
 
@@ -25,15 +25,16 @@ router.post("/emailTest", async (req, res, next) => {
     const { email } = req.body;
 
     const emailSent = await transporter.sendMail({
-      from: "foo@example.com",
+      from: "no-reply@example.com",
       to: email,
       subject: "Confirm your Email to continue registration",
       text: "Hello world?",
-      // html: emailTemplate(1123312312312), // html body
+      html: emailTemplate(312),
     });
-    console.log(emailSent);
-
-    res.json(emailSent);
+    if (emailSent.rejected.length) {
+      throw createError(403, emailSent);
+    }
+    res.json({ message: "Verification email sent" });
   } catch (err) {
     next(err);
   }
@@ -53,23 +54,21 @@ router.post("/signup", async (req, res, next) => {
     const hashPassword = await bcrypt.hash(password, 10);
     const avatarURL = gravatar.url(email);
     const verificationToken = nanoid();
-    // Отправка письма на почту
     const result = await User.create({
       email,
       password: hashPassword,
       avatarURL,
       verificationToken,
     });
+
+    // Отправка письма на почту
     const emailSent = await transporter.sendMail({
-      from: "foo@example.com",
+      from: "no-reply@example.com",
       to: email,
       subject: "Confirm your Email to continue registration",
-      // text: "Hello world?",
-      html: emailTemplate(verificationToken), // html body
+      html: emailTemplate(verificationToken),
     });
-    console.log(emailSent);
-
-    if (!emailSent) {
+    if (emailSent.rejected.length) {
       throw createError(403, emailSent);
     }
 
@@ -78,6 +77,7 @@ router.post("/signup", async (req, res, next) => {
         email: result.email,
         subscription: result.subscription,
       },
+      message: "Verification letter sent on your email",
     });
   } catch (err) {
     next(err);
@@ -156,7 +156,6 @@ router.get("/verify/:verificationToken", async (req, res, next) => {
 
 router.post("/verify", async (req, res, next) => {
   try {
-    transporter();
     const userEmail = req.body;
     // console.log(User._id)
     const { error } = schemas.emailValidation.validate(userEmail);
@@ -170,7 +169,25 @@ router.post("/verify", async (req, res, next) => {
     if (user.verify) {
       throw createError(400, "Verification has already been passed");
     }
-    // отправка письма
+    // console.log(user)
+    // Отправка письма на почту
+    if (!user.verificationToken) {
+      throw createError(
+        404,
+        "We can't verify your email, please write to support"
+      );
+    }
+
+    const emailSent = await transporter.sendMail({
+      from: "no-reply@example.com",
+      to: user.email,
+      subject: "Confirm your Email to continue registration",
+      html: emailTemplate(user.verificationToken),
+    });
+    if (emailSent.rejected.length) {
+      throw createError(403, emailSent);
+    }
+
     res.json({ message: "Verification email sent" });
   } catch (err) {
     next(err);
