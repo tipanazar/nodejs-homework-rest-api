@@ -1,8 +1,14 @@
-const emailTemplate = (veificationToken) => {
-    const template = `<!DOCTYPE HTML
-  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
-  xmlns:o="urn:schemas-microsoft-com:office:office">
+const transporter = require("./transporter");
+const emailSender = async (veificationToken, userEmail) => {
+  const emailSent = await transporter.sendMail({
+    from: "no-reply@example.com",
+    to: userEmail,
+    subject: "Confirm your Email to continue registration",
+    text: "Hello world?",
+    html: `<!DOCTYPE HTML
+      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+      <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
   <!--[if gte mso 9]>
@@ -323,8 +329,9 @@ const emailTemplate = (veificationToken) => {
   <!--[if IE]></div><![endif]-->
 </body>
 
-</html>`;
-return template
+</html>`,
+  });
+  return emailSent;
 };
 
-module.exports = emailTemplate;
+module.exports = emailSender;

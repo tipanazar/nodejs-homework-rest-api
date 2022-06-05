@@ -1,9 +1,9 @@
 const createError = require("./createError");
 const transporter = require("./transporter");
-const emailTemplate = require('./emailTemplate')
+const emailSender = require('./emailSender')
 
 module.exports = {
   createError,
   transporter,
-  emailTemplate
+  emailSender
 };

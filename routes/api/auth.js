@@ -13,32 +13,11 @@ const { User, schemas } = require("../../models/User");
 const { auth } = require("../../middlewares");
 const { upload } = require("../../middlewares");
 const { createError } = require("../../helpers");
-const { transporter } = require("../../helpers");
-const { emailTemplate } = require("../../helpers");
+const { emailSender } = require("../../helpers");
 
 const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
 
 const { SECRET_KEY } = process.env;
-
-router.post("/emailTest", async (req, res, next) => {
-  try {
-    const { email } = req.body;
-
-    const emailSent = await transporter.sendMail({
-      from: "no-reply@example.com",
-      to: email,
-      subject: "Confirm your Email to continue registration",
-      text: "Hello world?",
-      html: emailTemplate(312),
-    });
-    if (emailSent.rejected.length) {
-      throw createError(403, emailSent);
-    }
-    res.json({ message: "Verification email sent" });
-  } catch (err) {
-    next(err);
-  }
-});
 
 router.post("/signup", async (req, res, next) => {
   try {
@@ -60,18 +39,7 @@ router.post("/signup", async (req, res, next) => {
       avatarURL,
       verificationToken,
     });
-
-    // Отправка письма на почту
-    const emailSent = await transporter.sendMail({
-      from: "no-reply@example.com",
-      to: email,
-      subject: "Confirm your Email to continue registration",
-      html: emailTemplate(verificationToken),
-    });
-    if (emailSent.rejected.length) {
-      throw createError(403, emailSent);
-    }
-
+    await emailSender(verificationToken, email);
     res.status(201).json({
       user: {
         email: result.email,
@@ -157,7 +125,6 @@ router.get("/verify/:verificationToken", async (req, res, next) => {
 router.post("/verify", async (req, res, next) => {
   try {
     const userEmail = req.body;
-    // console.log(User._id)
     const { error } = schemas.emailValidation.validate(userEmail);
     if (error) {
       throw createError(400, error.message);
@@ -169,25 +136,14 @@ router.post("/verify", async (req, res, next) => {
     if (user.verify) {
       throw createError(400, "Verification has already been passed");
     }
-    // console.log(user)
-    // Отправка письма на почту
+
     if (!user.verificationToken) {
       throw createError(
         404,
         "We can't verify your email, please write to support"
       );
     }
-
-    const emailSent = await transporter.sendMail({
-      from: "no-reply@example.com",
-      to: user.email,
-      subject: "Confirm your Email to continue registration",
-      html: emailTemplate(user.verificationToken),
-    });
-    if (emailSent.rejected.length) {
-      throw createError(403, emailSent);
-    }
-
+    await emailSender(user.verificationToken, user.email);
     res.json({ message: "Verification email sent" });
   } catch (err) {
     next(err);
