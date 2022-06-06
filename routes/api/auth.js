@@ -5,13 +5,15 @@ const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
 const Jimp = require("jimp");
+const { nanoid } = require("nanoid");
 
 const router = express.Router();
 
 const { User, schemas } = require("../../models/User");
 const { auth } = require("../../middlewares");
 const { upload } = require("../../middlewares");
-const createError = require("../../helpers/createErr");
+const { createError } = require("../../helpers");
+const { emailSender } = require("../../helpers");
 
 const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
 
@@ -30,16 +32,20 @@ router.post("/signup", async (req, res, next) => {
     }
     const hashPassword = await bcrypt.hash(password, 10);
     const avatarURL = gravatar.url(email);
+    const verificationToken = nanoid();
     const result = await User.create({
       email,
       password: hashPassword,
       avatarURL,
+      verificationToken,
     });
+    await emailSender(verificationToken, email);
     res.status(201).json({
       user: {
         email: result.email,
         subscription: result.subscription,
       },
+      message: "Verification letter sent on your email",
     });
   } catch (err) {
     next(err);
@@ -56,6 +62,9 @@ router.post("/login", async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) {
       throw createError(401, "Email is wrong");
+    }
+    if (!user.verify) {
+      throw createError(403, "Verify your email first!");
     }
     const passwordCompare = await bcrypt.compare(password, user.password);
     if (!passwordCompare) {
@@ -92,6 +101,51 @@ router.get("/logout", auth, async (req, res, next) => {
         next(err);
       }
     });
+    next(err);
+  }
+});
+
+router.get("/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const verificationToken = req.params;
+    const user = await User.findOne(verificationToken);
+    if (!user) {
+      throw createError(404, "User not found");
+    }
+    await User.findByIdAndUpdate(user._id, {
+      verificationToken: null,
+      verify: true,
+    });
+    res.json({ message: "Verification successful" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/verify", async (req, res, next) => {
+  try {
+    const userEmail = req.body;
+    const { error } = schemas.emailValidation.validate(userEmail);
+    if (error) {
+      throw createError(400, error.message);
+    }
+    const user = await User.findOne(userEmail);
+    if (!user) {
+      throw createError(404, "No user with this Email");
+    }
+    if (user.verify) {
+      throw createError(400, "Verification has already been passed");
+    }
+
+    if (!user.verificationToken) {
+      throw createError(
+        404,
+        "We can't verify your email, please write to support"
+      );
+    }
+    await emailSender(user.verificationToken, user.email);
+    res.json({ message: "Verification email sent" });
+  } catch (err) {
     next(err);
   }
 });

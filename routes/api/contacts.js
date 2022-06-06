@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { Contact, schemas } = require("../../models/Contact");
 
-const createError = require("../../helpers/createErr");
+const {createError} = require("../../helpers");
 
 const { auth } = require("../../middlewares");
 
