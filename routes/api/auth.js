@@ -93,14 +93,15 @@ router.get("/logout", auth, async (req, res, next) => {
     await User.findByIdAndUpdate(_id, { token: "" });
     res.status(204).json();
   } catch (err) {
-    router.get("/current", auth, async (req, res, next) => {
-      try {
-        const { email, subscription } = req.user;
-        res.json({ email, subscription });
-      } catch (err) {
-        next(err);
-      }
-    });
+    next(err);
+  }
+});
+
+router.get("/current", auth, async (req, res, next) => {
+  try {
+    const { email, subscription } = req.user;
+    res.json({ email, subscription });
+  } catch (err) {
     next(err);
   }
 });
