@@ -16,7 +16,7 @@ const userSchema = Schema(
       required: [true, "Email is required"],
       match: emailRegexp,
       unique: true,
-      dropDups: true
+      dropDups: true,
     },
     subscription: {
       type: String,
@@ -25,7 +25,7 @@ const userSchema = Schema(
     },
     avatarURL: {
       type: String,
-      required: true
+      required: true,
     },
     token: {
       type: String,
@@ -37,29 +37,29 @@ const userSchema = Schema(
     },
     verificationToken: {
       type: String,
-      required: [true, 'Verify token is required'],
+      required: [true, "Verify token is required"],
     },
   },
   { versionKey: false, timestamps: false }
 );
 
 const addUserSchema = Joi.object({
-  email: Joi.string().pattern(emailRegexp).required(),
+  email: Joi.string().required(),
   password: Joi.string().min(6).required(),
 });
 
 const subscriptionUpdSchema = Joi.object({
-  subscription: Joi.string().valid("starter", "pro", "business").required()
-})
+  subscription: Joi.string().valid("starter", "pro", "business").required(),
+});
 
 const emailValidationSchema = Joi.object({
-  email: Joi.string().pattern(emailRegexp).required()
-})
+  email: Joi.string().pattern(emailRegexp).required(),
+});
 
 const schemas = {
   add: addUserSchema,
   subUpd: subscriptionUpdSchema,
-  emailValidation: emailValidationSchema
+  emailValidation: emailValidationSchema,
 };
 
 const User = model("user", userSchema);
